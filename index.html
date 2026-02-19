@@ -3,31 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TCO Risiko-Analyse</title>
-    
+    <title>TCO Rechner</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
     <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
     <script src="https://unpkg.com/recharts/umd/Recharts.js"></script>
-
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        .chart-container { width: 100%; height: 300px; }
+        body { background-color: #f8fafc; font-family: sans-serif; }
+        .chart-wrapper { width: 100%; height: 250px; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useMemo } = React;
+        // SICHERE ZUWEISUNG DER RECHARTS KOMPONENTEN
         const { 
             BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-            AreaChart, Area, Cell
-        } = Recharts;
+            AreaChart, Area, Cell 
+        } = window.Recharts; 
+
+        const { useState, useMemo } = React;
 
         const App = () => {
             const [monthlyStatusQuoCost, setMonthlyStatusQuoCost] = useState(4500); 
@@ -42,9 +40,9 @@
                 const data = [];
                 let cumStatusQuo = 0;
                 let cumMigration = migrationProjectCost;
-                const months = years * 12;
+                const totalMonths = years * 12;
 
-                for (let m = 0; m <= months; m++) {
+                for (let m = 0; m <= totalMonths; m++) {
                     if (m > 0) {
                         cumStatusQuo += monthlyStatusQuoCost;
                         const currentMonthlyMig = m <= (hikeAfterYears * 12) ? monthlyMigrationLow : monthlyStatusQuoCost;
@@ -69,78 +67,51 @@
                 new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
             return (
-                <div className="min-h-screen p-4 md:p-8">
-                    <div className="max-w-6xl mx-auto">
-                        <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                            <div>
-                                <h1 className="text-3xl font-black text-slate-900 tracking-tighter">TCO ANALYSE</h1>
-                                <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">Projektion: Bestand vs. Migration</p>
-                            </div>
-                            <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 flex">
-                                {[5, 10, 15].map((y) => (
-                                    <button key={y} onClick={() => setYears(y)} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${years === y ? 'bg-slate-900 text-white' : 'text-slate-400'}`}>{y} J.</button>
-                                ))}
-                            </div>
-                        </header>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            {/* Inputs */}
+                <div className="min-h-screen p-4">
+                    <div className="max-w-4xl mx-auto bg-white p-6 rounded-3xl shadow-xl border border-slate-200 mt-4">
+                        <h1 className="text-2xl font-black text-slate-900 mb-6 border-b pb-4">TCO ANALYSE</h1>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className="space-y-4">
-                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                                    <h2 className="text-xs font-black uppercase text-slate-400 mb-4 tracking-widest">Kosten-Inputs</h2>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Status Quo (€/Monat)</label>
-                                            <input type="number" value={monthlyStatusQuoCost} onChange={(e) => setMonthlyStatusQuoCost(Number(e.target.value))} className="w-full p-2 bg-slate-50 rounded-lg font-bold text-slate-700 outline-none border border-slate-100 focus:border-emerald-500" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Einmal-Invest Migration (€)</label>
-                                            <input type="number" value={migrationProjectCost} onChange={(e) => setMigrationProjectCost(Number(e.target.value))} className="w-full p-2 bg-slate-50 rounded-lg font-bold text-slate-700 outline-none border border-slate-100 focus:border-red-500" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Neue Kosten (€/Monat)</label>
-                                            <input type="number" value={monthlyMigrationLow} onChange={(e) => setMonthlyMigrationLow(Number(e.target.value))} className="w-full p-2 bg-slate-50 rounded-lg font-bold text-slate-700 outline-none border border-slate-100 focus:border-slate-400" />
-                                        </div>
-                                    </div>
+                                <div className="p-4 bg-slate-50 rounded-xl">
+                                    <label className="block text-xs font-bold text-slate-500 uppercase">Status Quo (€/Monat)</label>
+                                    <input type="number" value={monthlyStatusQuoCost} onChange={(e) => setMonthlyStatusQuoCost(Number(e.target.value))} className="w-full bg-transparent text-xl font-bold outline-none" />
                                 </div>
-
-                                <div className={`p-6 rounded-2xl shadow-lg ${diff > 0 ? 'bg-emerald-600' : 'bg-red-600'} text-white`}>
-                                    <p className="text-[10px] font-black uppercase opacity-80 tracking-widest">Finanzieller Vorteil</p>
-                                    <p className="text-3xl font-black my-1">{formatCurrency(Math.abs(diff))}</p>
-                                    <p className="text-xs font-bold opacity-90 italic">über {years} Jahre Laufzeit</p>
+                                <div className="p-4 bg-red-50 rounded-xl">
+                                    <label className="block text-xs font-bold text-red-500 uppercase">Invest Migration (€)</label>
+                                    <input type="number" value={migrationProjectCost} onChange={(e) => setMigrationProjectCost(Number(e.target.value))} className="w-full bg-transparent text-xl font-bold outline-none text-red-600" />
+                                </div>
+                                <div className={`p-6 rounded-xl text-white ${diff > 0 ? 'bg-emerald-500' : 'bg-red-500'}`}>
+                                    <p className="text-xs uppercase font-bold opacity-80 text-center">Vorteil nach {years} Jahren</p>
+                                    <p className="text-3xl font-black text-center">{formatCurrency(Math.abs(diff))}</p>
+                                </div>
+                                <div className="flex gap-2 justify-center">
+                                    {[5, 10, 15].map(y => (
+                                        <button key={y} onClick={() => setYears(y)} className={`px-4 py-2 rounded-lg font-bold ${years === y ? 'bg-slate-800 text-white' : 'bg-slate-200'}`}>{y}J</button>
+                                    ))}
                                 </div>
                             </div>
 
-                            {/* Charts */}
-                            <div className="lg:col-span-2 space-y-6">
-                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                                    <h2 className="text-xs font-black uppercase text-slate-400 mb-6 tracking-widest">Gesamtkosten-Vergleich (TCO)</h2>
-                                    <div className="chart-container">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <BarChart data={[{name: 'Bestand', wert: totalStatusQuo, fill: COLORS.BESTAND}, {name: 'Migration', wert: totalMigration, fill: COLORS.MIGRATION}]} layout="vertical">
-                                                <XAxis type="number" hide />
-                                                <YAxis dataKey="name" type="category" width={80} tick={{fontSize: 12, fontWeight: 'bold'}} axisLine={false} tickLine={false} />
-                                                <Tooltip formatter={(v) => formatCurrency(v)} cursor={{fill: '#f1f5f9'}} />
-                                                <Bar dataKey="wert" radius={[0, 8, 8, 0]} barSize={40} />
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                    </div>
+                            <div className="space-y-6">
+                                <div className="chart-wrapper">
+                                    <ResponsiveContainer>
+                                        <BarChart data={[{name: 'Bestand', wert: totalStatusQuo, fill: COLORS.BESTAND}, {name: 'Migration', wert: totalMigration, fill: COLORS.MIGRATION}]} layout="vertical">
+                                            <XAxis type="number" hide />
+                                            <YAxis dataKey="name" type="category" width={70} tick={{fontSize: 10, fontWeight: 'bold'}} />
+                                            <Bar dataKey="wert" radius={[0, 5, 5, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
                                 </div>
-
-                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                                    <h2 className="text-xs font-black uppercase text-slate-400 mb-6 tracking-widest">Kumulierter Verlauf (€)</h2>
-                                    <div className="chart-container">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <AreaChart data={timelineData}>
-                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                                <XAxis dataKey="jahr" tick={{fontSize: 10}} label={{ value: 'Jahre', position: 'insideBottomRight', offset: -5 }} />
-                                                <YAxis tickFormatter={(v) => `${v/1000}k`} tick={{fontSize: 10}} />
-                                                <Tooltip formatter={(v) => formatCurrency(v)} />
-                                                <Area type="monotone" dataKey="bestand" stroke={COLORS.BESTAND} fill={COLORS.BESTAND} fillOpacity={0.1} strokeWidth={3} name="Bestand" />
-                                                <Area type="monotone" dataKey="migration" stroke={COLORS.MIGRATION} fill={COLORS.MIGRATION} fillOpacity={0.1} strokeWidth={3} name="Migration" />
-                                            </AreaChart>
-                                        </ResponsiveContainer>
-                                    </div>
+                                <div className="chart-wrapper">
+                                    <ResponsiveContainer>
+                                        <AreaChart data={timelineData}>
+                                            <XAxis dataKey="jahr" tick={{fontSize: 10}} />
+                                            <YAxis tickFormatter={(v) => `${v/1000}k`} tick={{fontSize: 10}} />
+                                            <Tooltip />
+                                            <Area type="monotone" dataKey="bestand" stroke={COLORS.BESTAND} fill={COLORS.BESTAND} fillOpacity={0.1} />
+                                            <Area type="monotone" dataKey="migration" stroke={COLORS.MIGRATION} fill={COLORS.MIGRATION} fillOpacity={0.1} />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
                                 </div>
                             </div>
                         </div>
