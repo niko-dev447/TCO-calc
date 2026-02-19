@@ -9,145 +9,138 @@
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
     <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
     <script src="https://unpkg.com/recharts/umd/Recharts.js"></script>
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .chart-container { width: 100%; height: 300px; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useMemo, useEffect } = React;
+        const { useState, useMemo } = React;
         const { 
             BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-            AreaChart, Area, Cell, ReferenceLine, Label 
+            AreaChart, Area, Cell
         } = Recharts;
 
         const App = () => {
             const [monthlyStatusQuoCost, setMonthlyStatusQuoCost] = useState(4500); 
             const [migrationProjectCost, setMigrationProjectCost] = useState(500000); 
             const [monthlyMigrationLow, setMonthlyMigrationLow] = useState(1600); 
-            const [hikeAfterYears, setHikeAfterYears] = useState(5);
             const [years, setYears] = useState(10);
+            const hikeAfterYears = 5;
 
-            const COLORS = { BESTAND: '#10b981', MIGRATION: '#ef4444', WARNING: '#f59e0b' };
-            const months = years * 12;
-            const hikeMonth = hikeAfterYears * 12;
+            const COLORS = { BESTAND: '#10b981', MIGRATION: '#ef4444' };
 
             const timelineData = useMemo(() => {
                 const data = [];
                 let cumStatusQuo = 0;
                 let cumMigration = migrationProjectCost;
+                const months = years * 12;
+
                 for (let m = 0; m <= months; m++) {
                     if (m > 0) {
                         cumStatusQuo += monthlyStatusQuoCost;
-                        const currentMonthlyMig = m <= hikeMonth ? monthlyMigrationLow : monthlyStatusQuoCost;
+                        const currentMonthlyMig = m <= (hikeAfterYears * 12) ? monthlyMigrationLow : monthlyStatusQuoCost;
                         cumMigration += currentMonthlyMig;
                     }
-                    if (m % 6 === 0 || m === months) {
+                    if (m % 12 === 0) {
                         data.push({
-                            monat: m,
-                            jahr: (m / 12).toFixed(1),
+                            jahr: m / 12,
                             bestand: Math.round(cumStatusQuo),
                             migration: Math.round(cumMigration),
                         });
                     }
                 }
                 return data;
-            }, [monthlyStatusQuoCost, migrationProjectCost, monthlyMigrationLow, hikeMonth, months]);
+            }, [monthlyStatusQuoCost, migrationProjectCost, monthlyMigrationLow, years]);
 
-            const totalStatusQuo = monthlyStatusQuoCost * months;
+            const totalStatusQuo = monthlyStatusQuoCost * years * 12;
             const totalMigration = timelineData[timelineData.length - 1].migration;
-            const totalDiff = totalMigration - totalStatusQuo;
-            const isStatusQuoBetter = totalStatusQuo < totalMigration;
-
-            const tcoBarData = [
-                { name: 'Bestand', wert: totalStatusQuo, color: COLORS.BESTAND },
-                { name: 'Migration', wert: totalMigration, color: COLORS.MIGRATION }
-            ];
+            const diff = totalMigration - totalStatusQuo;
 
             const formatCurrency = (val) => 
                 new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
             return (
                 <div className="min-h-screen p-4 md:p-8">
-                    <div className="max-w-7xl mx-auto">
-                        <header className="mb-10 border-b border-slate-200 pb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    <div className="max-w-6xl mx-auto">
+                        <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <div>
-                                <h1 className="text-4xl font-black tracking-tighter text-slate-900">
-                                    TCO RISIKO-ANALYSE
-                                </h1>
-                                <p className="text-slate-500 font-bold uppercase text-xs tracking-widest mt-2">Finanzielle Projektion</p>
+                                <h1 className="text-3xl font-black text-slate-900 tracking-tighter">TCO ANALYSE</h1>
+                                <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">Projektion: Bestand vs. Migration</p>
                             </div>
-                            <div className="bg-white p-1 rounded-2xl shadow-inner border border-slate-200 flex gap-1">
+                            <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 flex">
                                 {[5, 10, 15].map((y) => (
-                                    <button key={y} onClick={() => setYears(y)} className={`px-6 py-2 rounded-xl text-sm font-black transition-all ${years === y ? 'bg-slate-900 text-white' : 'text-slate-400'}`}>{y} Jahre</button>
+                                    <button key={y} onClick={() => setYears(y)} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${years === y ? 'bg-slate-900 text-white' : 'text-slate-400'}`}>{y} J.</button>
                                 ))}
                             </div>
                         </header>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                            <div className="lg:col-span-4 space-y-6">
-                                <section className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-                                    <h2 className="text-sm font-black uppercase text-slate-400 mb-6">Kostentreiber</h2>
-                                    <div className="space-y-5">
-                                        <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-                                            <label className="block text-[10px] font-black text-emerald-600 uppercase mb-1">Status Quo Kosten / Monat</label>
-                                            <div className="text-xl font-black text-emerald-700">{formatCurrency(monthlyStatusQuoCost)}</div>
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            {/* Inputs */}
+                            <div className="space-y-4">
+                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                                    <h2 className="text-xs font-black uppercase text-slate-400 mb-4 tracking-widest">Kosten-Inputs</h2>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Status Quo (€/Monat)</label>
+                                            <input type="number" value={monthlyStatusQuoCost} onChange={(e) => setMonthlyStatusQuoCost(Number(e.target.value))} className="w-full p-2 bg-slate-50 rounded-lg font-bold text-slate-700 outline-none border border-slate-100 focus:border-emerald-500" />
                                         </div>
-                                        <div className="p-4 bg-red-50 rounded-2xl border border-red-100">
-                                            <label className="block text-[10px] font-black text-red-500 uppercase mb-1">Einmal-Invest Migration</label>
-                                            <input type="number" value={migrationProjectCost} onChange={(e) => setMigrationProjectCost(Number(e.target.value))} className="w-full bg-transparent text-xl font-black text-red-600 focus:outline-none" />
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Einmal-Invest Migration (€)</label>
+                                            <input type="number" value={migrationProjectCost} onChange={(e) => setMigrationProjectCost(Number(e.target.value))} className="w-full p-2 bg-slate-50 rounded-lg font-bold text-slate-700 outline-none border border-slate-100 focus:border-red-500" />
                                         </div>
-                                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                                            <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Neue Kosten (bis Jahr {hikeAfterYears})</label>
-                                            <input type="number" value={monthlyMigrationLow} onChange={(e) => setMonthlyMigrationLow(Number(e.target.value))} className="w-full bg-transparent text-xl font-black text-slate-700 focus:outline-none" />
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Neue Kosten (€/Monat)</label>
+                                            <input type="number" value={monthlyMigrationLow} onChange={(e) => setMonthlyMigrationLow(Number(e.target.value))} className="w-full p-2 bg-slate-50 rounded-lg font-bold text-slate-700 outline-none border border-slate-100 focus:border-slate-400" />
                                         </div>
                                     </div>
-                                </section>
+                                </div>
 
-                                <div className={`p-8 rounded-3xl shadow-xl ${isStatusQuoBetter ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}>
-                                    <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-2">Fazit</h3>
-                                    <p className="text-lg font-bold mb-4">{isStatusQuoBetter ? 'Bestand ist wirtschaftlicher' : 'Migration lohnt sich'}</p>
-                                    <div className="border-t border-white/20 pt-4">
-                                        <p className="text-[10px] uppercase font-black opacity-70">Delta über {years} Jahre</p>
-                                        <p className="text-3xl font-black">{formatCurrency(Math.abs(totalDiff))}</p>
-                                    </div>
+                                <div className={`p-6 rounded-2xl shadow-lg ${diff > 0 ? 'bg-emerald-600' : 'bg-red-600'} text-white`}>
+                                    <p className="text-[10px] font-black uppercase opacity-80 tracking-widest">Finanzieller Vorteil</p>
+                                    <p className="text-3xl font-black my-1">{formatCurrency(Math.abs(diff))}</p>
+                                    <p className="text-xs font-bold opacity-90 italic">über {years} Jahre Laufzeit</p>
                                 </div>
                             </div>
 
-                            <div className="lg:col-span-8 space-y-6">
-                                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 h-[350px]">
-                                    <h2 className="text-xs font-black uppercase text-slate-400 mb-4">Kumulierte Gesamtkosten</h2>
-                                    <ResponsiveContainer width="100%" height="90%">
-                                        <BarChart data={tcoBarData} layout="vertical">
-                                            <XAxis type="number" hide />
-                                            <YAxis dataKey="name" type="category" width={80} tick={{fontWeight: 'bold'}} />
-                                            <Tooltip formatter={(v) => formatCurrency(v)} cursor={{fill: 'transparent'}} />
-                                            <Bar dataKey="wert" radius={[0, 10, 10, 0]} barSize={40}>
-                                                {tcoBarData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                                            </Bar>
-                                        </BarChart>
-                                    </ResponsiveContainer>
+                            {/* Charts */}
+                            <div className="lg:col-span-2 space-y-6">
+                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                                    <h2 className="text-xs font-black uppercase text-slate-400 mb-6 tracking-widest">Gesamtkosten-Vergleich (TCO)</h2>
+                                    <div className="chart-container">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={[{name: 'Bestand', wert: totalStatusQuo, fill: COLORS.BESTAND}, {name: 'Migration', wert: totalMigration, fill: COLORS.MIGRATION}]} layout="vertical">
+                                                <XAxis type="number" hide />
+                                                <YAxis dataKey="name" type="category" width={80} tick={{fontSize: 12, fontWeight: 'bold'}} axisLine={false} tickLine={false} />
+                                                <Tooltip formatter={(v) => formatCurrency(v)} cursor={{fill: '#f1f5f9'}} />
+                                                <Bar dataKey="wert" radius={[0, 8, 8, 0]} barSize={40} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
                                 </div>
 
-                                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 h-[400px]">
-                                    <h2 className="text-xs font-black uppercase text-slate-400 mb-4">Break-Even Analyse</h2>
-                                    <ResponsiveContainer width="100%" height="90%">
-                                        <AreaChart data={timelineData}>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                            <XAxis dataKey="jahr" tick={{fontSize: 10}} />
-                                            <YAxis tickFormatter={(v) => `${v/1000}k€`} tick={{fontSize: 10}} />
-                                            <Tooltip formatter={(v) => formatCurrency(v)} />
-                                            <Area type="monotone" dataKey="bestand" stroke={COLORS.BESTAND} fill={COLORS.BESTAND} fillOpacity={0.1} strokeWidth={3} name="Bestand" />
-                                            <Area type="monotone" dataKey="migration" stroke={COLORS.MIGRATION} fill={COLORS.MIGRATION} fillOpacity={0.1} strokeWidth={3} name="Migration" />
-                                        </AreaChart>
-                                    </ResponsiveContainer>
+                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                                    <h2 className="text-xs font-black uppercase text-slate-400 mb-6 tracking-widest">Kumulierter Verlauf (€)</h2>
+                                    <div className="chart-container">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <AreaChart data={timelineData}>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                                <XAxis dataKey="jahr" tick={{fontSize: 10}} label={{ value: 'Jahre', position: 'insideBottomRight', offset: -5 }} />
+                                                <YAxis tickFormatter={(v) => `${v/1000}k`} tick={{fontSize: 10}} />
+                                                <Tooltip formatter={(v) => formatCurrency(v)} />
+                                                <Area type="monotone" dataKey="bestand" stroke={COLORS.BESTAND} fill={COLORS.BESTAND} fillOpacity={0.1} strokeWidth={3} name="Bestand" />
+                                                <Area type="monotone" dataKey="migration" stroke={COLORS.MIGRATION} fill={COLORS.MIGRATION} fillOpacity={0.1} strokeWidth={3} name="Migration" />
+                                            </AreaChart>
+                                        </ResponsiveContainer>
+                                    </div>
                                 </div>
                             </div>
                         </div>
