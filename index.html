@@ -6,32 +6,30 @@
     <title>TCO Risiko-Analyse</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
+    <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
     <script src="https://unpkg.com/recharts/umd/Recharts.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
     
+    <script src="https://unpkg.com/lucide@latest"></script>
+
     <style>
-        body { background-color: #f8fafc; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .recharts-responsive-container { min-height: 250px; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        // Wir holen uns die Komponenten aus den globalen Objekten, die die Scripte oben erstellt haben
-        const { useState, useMemo } = React;
+        const { useState, useMemo, useEffect } = React;
         const { 
-            BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
+            BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
             AreaChart, Area, Cell, ReferenceLine, Label 
         } = Recharts;
-        const { 
-            ShieldAlert, Zap, CheckCircle2, XCircle, History 
-        } = lucide;
 
         const App = () => {
             const [monthlyStatusQuoCost, setMonthlyStatusQuoCost] = useState(4500); 
@@ -40,6 +38,9 @@
             const [hikeAfterYears, setHikeAfterYears] = useState(5);
             const [years, setYears] = useState(10);
 
+            // Icons manuell injecten, da lucide-react in der CDN Version anders heißt
+            const iconProps = { size: 24, strokeWidth: 2.5 };
+            
             const COLORS = { BESTAND: '#10b981', MIGRATION: '#ef4444', WARNING: '#f59e0b' };
             const months = years * 12;
             const hikeMonth = hikeAfterYears * 12;
@@ -58,8 +59,8 @@
                         data.push({
                             monat: m,
                             jahr: (m / 12).toFixed(1),
-                            'Bestand (Status Quo)': Math.round(cumStatusQuo),
-                            'Migration Pfad': Math.round(cumMigration),
+                            bestand: Math.round(cumStatusQuo),
+                            migration: Math.round(cumMigration),
                         });
                     }
                 }
@@ -67,32 +68,31 @@
             }, [monthlyStatusQuoCost, migrationProjectCost, monthlyMigrationLow, hikeMonth, months]);
 
             const totalStatusQuo = monthlyStatusQuoCost * months;
-            const totalMigration = timelineData[timelineData.length - 1]['Migration Pfad'];
+            const totalMigration = timelineData[timelineData.length - 1].migration;
             const totalDiff = totalMigration - totalStatusQuo;
             const isStatusQuoBetter = totalStatusQuo < totalMigration;
 
             const tcoBarData = [
-                { name: 'Bestand (Grün)', wert: totalStatusQuo, color: COLORS.BESTAND },
-                { name: 'Migration (Rot)', wert: totalMigration, color: COLORS.MIGRATION }
+                { name: 'Bestand', wert: totalStatusQuo, color: COLORS.BESTAND },
+                { name: 'Migration', wert: totalMigration, color: COLORS.MIGRATION }
             ];
 
             const formatCurrency = (val) => 
                 new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
             return (
-                <div className="min-h-screen p-4 md:p-8 font-sans">
+                <div className="min-h-screen p-4 md:p-8">
                     <div className="max-w-7xl mx-auto">
                         <header className="mb-10 border-b border-slate-200 pb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                            <div className="space-y-1">
+                            <div>
                                 <h1 className="text-4xl font-black tracking-tighter text-slate-900 flex items-center gap-3">
-                                    <ShieldAlert className="text-red-600" size={36} />
                                     TCO RISIKO-ANALYSE
                                 </h1>
-                                <p className="text-slate-500 font-bold uppercase text-xs tracking-widest">Status Quo vs. Migration</p>
+                                <p className="text-slate-500 font-bold uppercase text-xs tracking-widest mt-2">Status Quo vs. Migration</p>
                             </div>
                             <div className="bg-white p-1 rounded-2xl shadow-inner border border-slate-200 flex gap-1">
                                 {[5, 10, 15].map((y) => (
-                                    <button key={y} onClick={() => setYears(y)} className={`px-6 py-2 rounded-xl text-sm font-black ${years === y ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400'}`}>{y} Jahre</button>
+                                    <button key={y} onClick={() => setYears(y)} className={`px-6 py-2 rounded-xl text-sm font-black transition-all ${years === y ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400'}`}>{y} Jahre</button>
                                 ))}
                             </div>
                         </header>
@@ -100,31 +100,28 @@
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                             <div className="lg:col-span-4 space-y-6">
                                 <section className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-                                    <h2 className="text-sm font-black uppercase text-slate-400 mb-6 flex items-center gap-2"><Zap size={16} className="text-amber-500" /> Parameter</h2>
+                                    <h2 className="text-sm font-black uppercase text-slate-400 mb-6">Parameter</h2>
                                     <div className="space-y-5">
                                         <div className="p-4 bg-emerald-50 rounded-2xl border-2 border-emerald-100">
-                                            <label className="block text-[10px] font-black text-emerald-600 uppercase mb-1">Status Quo (Effizient)</label>
-                                            <div className="flex items-center justify-between"><span className="text-xl font-black text-emerald-700">{formatCurrency(monthlyStatusQuoCost)}</span><span className="text-xs font-bold text-emerald-500">/ Monat</span></div>
+                                            <label className="block text-[10px] font-black text-emerald-600 uppercase mb-1">Status Quo Monatlich</label>
+                                            <div className="flex items-center justify-between"><span className="text-xl font-black text-emerald-700">{formatCurrency(monthlyStatusQuoCost)}</span></div>
                                         </div>
                                         <div className="p-4 bg-red-50 rounded-2xl border-2 border-red-100">
                                             <label className="block text-[10px] font-black text-red-500 uppercase mb-1">Invest Migration</label>
                                             <input type="number" value={migrationProjectCost} onChange={(e) => setMigrationProjectCost(Number(e.target.value))} className="w-full bg-transparent text-xl font-black text-red-600 focus:outline-none" />
                                         </div>
                                         <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                                            <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Neue Kosten (Temporär)</label>
+                                            <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Neue Kosten (Ab Start)</label>
                                             <input type="number" value={monthlyMigrationLow} onChange={(e) => setMonthlyMigrationLow(Number(e.target.value))} className="w-full bg-transparent text-xl font-black text-slate-700 focus:outline-none" />
                                         </div>
                                     </div>
                                 </section>
 
                                 <div className={`p-8 rounded-3xl shadow-xl ${isStatusQuoBetter ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}>
-                                    <div className="flex items-center gap-3 mb-4">
-                                        {isStatusQuoBetter ? <CheckCircle2 size={32} /> : <XCircle size={32} />}
-                                        <h3 className="text-2xl font-black italic uppercase tracking-tighter">Empfehlung</h3>
-                                    </div>
+                                    <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-2">Empfehlung</h3>
                                     <p className="text-lg font-bold mb-4">{isStatusQuoBetter ? 'Bestand halten' : 'Migration prüfen'}</p>
                                     <div className="border-t border-white/20 pt-4">
-                                        <p className="text-[10px] uppercase font-black opacity-70">Vorteil</p>
+                                        <p className="text-[10px] uppercase font-black opacity-70">Vorteil nach {years} J.</p>
                                         <p className="text-3xl font-black">{formatCurrency(Math.abs(totalDiff))}</p>
                                     </div>
                                 </div>
@@ -132,12 +129,12 @@
 
                             <div className="lg:col-span-8 space-y-6">
                                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-                                    <h2 className="text-xs font-black uppercase text-slate-400 mb-8 border-l-4 border-emerald-500 pl-3">Gesamtkosten (TCO) nach {years} Jahren</h2>
-                                    <div className="h-64 w-full">
-                                        <ResponsiveContainer width="100%" height="100%">
+                                    <h2 className="text-xs font-black uppercase text-slate-400 mb-8 border-l-4 border-emerald-500 pl-3">Gesamtkosten (TCO)</h2>
+                                    <div style={{ width: '100%', height: 300 }}>
+                                        <ResponsiveContainer>
                                             <BarChart data={tcoBarData} layout="vertical">
                                                 <XAxis type="number" hide />
-                                                <YAxis dataKey="name" type="category" width={140} tick={{fontWeight: '900', fontSize: 11}} />
+                                                <YAxis dataKey="name" type="category" width={100} tick={{fontWeight: '900'}} />
                                                 <Tooltip formatter={(v) => formatCurrency(v)} />
                                                 <Bar dataKey="wert" radius={[0, 10, 10, 0]} barSize={50}>
                                                     {tcoBarData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
@@ -146,16 +143,21 @@
                                         </ResponsiveContainer>
                                     </div>
                                 </div>
+
                                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-                                    <h2 className="text-xs font-black uppercase text-slate-400 mb-8 border-l-4 border-red-500 pl-3">Kosten-Kumulation</h2>
-                                    <div className="h-[400px] w-full">
-                                        <ResponsiveContainer width="100%" height="100%">
+                                    <h2 className="text-xs font-black uppercase text-slate-400 mb-8 border-l-4 border-red-500 pl-3">Kosten-Verlauf</h2>
+                                    <div style={{ width: '100%', height: 350 }}>
+                                        <ResponsiveContainer>
                                             <AreaChart data={timelineData}>
-                                                <XAxis dataKey="jahr" />
-                                                <YAxis tickFormatter={(v) => `€${v/1000}k`} />
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                                <XAxis dataKey="jahr" label={{ value: 'Jahre', position: 'insideBottomRight', offset: -5 }} />
+                                                <YAxis tickFormatter={(v) => `${v/1000}k€`} />
                                                 <Tooltip formatter={(v) => formatCurrency(v)} />
-                                                <Area type="monotone" dataKey="Bestand (Status Quo)" stroke={COLORS.BESTAND} fill={COLORS.BESTAND} fillOpacity={0.1} strokeWidth={4} />
-                                                <Area type="monotone" dataKey="Migration Pfad" stroke={COLORS.MIGRATION} fill={COLORS.MIGRATION} fillOpacity={0.1} strokeWidth={4} />
+                                                <Area type="monotone" dataKey="bestand" stroke={COLORS.BESTAND} fill={COLORS.BESTAND} fillOpacity={0.1} strokeWidth={4} name="Bestand" />
+                                                <Area type="monotone" dataKey="migration" stroke={COLORS.MIGRATION} fill={COLORS.MIGRATION} fillOpacity={0.1} strokeWidth={4} name="Migration" />
+                                                <ReferenceLine x={hikeAfterYears.toFixed(1)} stroke={COLORS.WARNING} strokeDasharray="3 3">
+                                                    <Label value="Preisanstieg" position="top" fill={COLORS.WARNING} fontWeight="bold" />
+                                                </ReferenceLine>
                                             </AreaChart>
                                         </ResponsiveContainer>
                                     </div>
